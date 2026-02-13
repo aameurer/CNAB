@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Análise de Prazos - CNAB Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table-sm-custom { font-size: 10pt; }
+        .table-sm-custom td, .table-sm-custom th { padding-top: 2px; padding-bottom: 2px; }
+        .lag-warning { color: #dc3545; font-weight: bold; } /* Red for lag > 0 or whatever rule */
+        .lag-ok { color: #198754; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/">CNAB Analytics Pro</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">Análise de Prazos</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h2 class="mb-4">Análise de Prazos (Pagamento vs Crédito)</h2>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form th:action="@{/analise-datas}" method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" class="form-control" name="startDate" th:value="${startDate}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" class="form-control" name="endDate" th:value="${endDate}">
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="useCreditDate" id="useCreditDate" th:checked="${useCreditDate}">
+                        <label class="form-check-label" for="useCreditDate">
+                            Filtrar por Data de Crédito
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+        <div class="card-header">
+            Comparativo API vs GERAL
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped table-sm-custom">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Nosso Número</th>
+                            <th>Pagador</th>
+                            <th>Data Base</th>
+                            <th>Detalhes (Divergências)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${results}">
+                            <td>
+                                <span th:if="${r.status == 'CONCILIADO'}" class="badge bg-success">CONCILIADO</span>
+                                <span th:if="${r.status == 'DIVERGENTE'}" class="badge bg-danger">DIVERGENTE</span>
+                                <span th:if="${r.status == 'SOMENTE_API'}" class="badge bg-primary">SOMENTE API</span>
+                                <span th:if="${r.status == 'SOMENTE_GERAL'}" class="badge bg-warning text-dark">SOMENTE GERAL</span>
+                            </td>
+                            <td th:text="${r.nossoNumero}"></td>
+                            <td th:text="${r.nomePagador}"></td>
+                            <td th:text="${#temporals.format(r.mainDate, 'dd/MM/yyyy')}"></td>
+                            <td>
+                                <ul th:if="${not #lists.isEmpty(r.logs)}" class="mb-0 ps-3">
+                                    <li th:each="log : ${r.logs}" th:text="${log}" class="text-danger" style="font-size: 0.9em;"></li>
+                                </ul>
+                                <span th:if="${#lists.isEmpty(r.logs)}" class="text-success">Valores conferem.</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

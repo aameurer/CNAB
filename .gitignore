@@ -1,0 +1,10 @@
+.trae/
+cnab-dashboard/target/
+**/target/
+*.class
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml

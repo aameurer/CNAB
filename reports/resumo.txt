@@ -1,0 +1,7 @@
+Relatório de Comparação CNAB240
+===============================
+Registros encontrados somente na API: 0
+Registros encontrados somente no Arquivo Geral: 0
+Registros correspondentes (Total): 64
+  - Com divergências (Valor/Data): 0
+  - Sem divergências: 64
