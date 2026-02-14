@@ -1,2 +1,2 @@
-pandas
-openpyxl
+# No external dependencies required.
+# Uses standard libraries: sqlite3, csv, tkinter, datetime, etc.

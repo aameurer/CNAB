@@ -1,6 +1,5 @@
 
 import sqlite3
-import pandas as pd
 
 class DatabaseManager:
     def __init__(self, db_name='transactions.db'):
@@ -56,11 +55,23 @@ class DatabaseManager:
         if not transactions:
             return
         
-        df = pd.DataFrame(transactions)
-        df.to_sql(table_name, self.conn, if_exists='append', index=False)
+        # Get keys from the first transaction to ensure column order
+        keys = list(transactions[0].keys())
+        columns = ', '.join(keys)
+        placeholders = ', '.join(['?'] * len(keys))
+        sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+        
+        values = [tuple(t[k] for k in keys) for t in transactions]
+        
+        cursor = self.conn.cursor()
+        cursor.executemany(sql, values)
+        self.conn.commit()
 
     def get_all_transactions(self, table_name):
-        return pd.read_sql(f"SELECT * FROM {table_name}", self.conn)
+        cursor = self.conn.cursor()
+        cursor.execute(f"SELECT * FROM {table_name}")
+        columns = [description[0] for description in cursor.description]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     def clear_tables(self):
         cursor = self.conn.cursor()

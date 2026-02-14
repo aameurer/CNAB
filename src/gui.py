@@ -90,7 +90,7 @@ class Application(tk.Tk):
         # ipady (internal padding) is key here for buttons
         
         ttk.Label(container_h, text="Critério de Data:").pack(side="left", padx=5)
-        self.date_criteria = tk.StringVar(value="data_ocorrencia")
+        self.date_criteria = tk.StringVar(value="data_credito")
         ttk.Radiobutton(container_h, text="Data Pagamento", variable=self.date_criteria, value="data_ocorrencia").pack(side="left", padx=5)
         ttk.Radiobutton(container_h, text="Data Crédito", variable=self.date_criteria, value="data_credito").pack(side="left", padx=5)
         
@@ -213,14 +213,14 @@ class Application(tk.Tk):
         
         return tree
 
-    def populate_tree(self, tree, df, status_col=None, value_col='valor_pago', date_col='data_ocorrencia'):
+    def populate_tree(self, tree, data, status_col=None, value_col='valor_pago', date_col='data_ocorrencia'):
         # Clear existing
         for item in tree.get_children():
             tree.delete(item)
             
-        if df.empty: return
+        if not data: return
 
-        for _, row in df.iterrows():
+        for row in data:
             # Handle potential column name variations
             # If standard col not found, try to find with suffix or similar
             
@@ -233,7 +233,7 @@ class Application(tk.Tk):
             nosso_num = get_val(row, 'nosso_numero')
             val = get_val(row, value_col)
             date = get_val(row, date_col)
-            status = row[status_col] if status_col and status_col in row else ""
+            status = row.get(status_col, "") if status_col else ""
             
             # Format value
             try:

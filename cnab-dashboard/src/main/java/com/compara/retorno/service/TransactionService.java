@@ -1,6 +1,7 @@
 package com.compara.retorno.service;
 
 import com.compara.retorno.model.Transacao;
+import com.compara.retorno.model.TipoOrigem;
 import com.compara.retorno.repository.TransacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,19 +25,30 @@ public class TransactionService {
     public void clearAll() {
         repository.deleteAll();
     }
+
+    @Transactional
+    public List<String> getAllFileSources() {
+        return repository.findDistinctFileSources();
+    }
+
+    @Transactional
+    public void deleteByFileSources(List<String> fileSources) {
+        if (fileSources != null && !fileSources.isEmpty()) {
+            repository.deleteByFileSourceIn(fileSources);
+        }
+    }
+
+    public boolean isFileAlreadyImported(String fileName) {
+        return repository.existsByFileSource(fileName);
+    }
     
     @Transactional
     public void performReconciliation() {
-        // Logic: Iterate over API transactions and find matching GERAL transactions
-        // Or pure SQL update?
-        // Let's keep it simple: Reset status first
-        
-        // This is a naive approach, for huge datasets we should use stored procedures or batch updates
-        List<Transacao> apiTransactions = repository.findByTipoOrigem("API");
+        List<Transacao> apiTransactions = repository.findByTipoOrigem(TipoOrigem.API);
         
         for (Transacao api : apiTransactions) {
             // Find match in GERAL
-            List<Transacao> matches = repository.findMatch("GERAL", api.getNossoNumero(), api.getValorPago(), api.getDataOcorrencia());
+            List<Transacao> matches = repository.findMatch(TipoOrigem.GERAL, api.getNossoNumero(), api.getValorPago(), api.getDataOcorrencia());
             
             if (!matches.isEmpty()) {
                 api.setStatusConciliacao("CONCILIADO");
@@ -50,11 +62,6 @@ public class TransactionService {
                 repository.save(api);
             }
         }
-        
-        // Mark remaining GERAL as DIVERGENTE (if not CONCILIADO)
-        // We can do this via query
-        // "UPDATE transacoes SET status_conciliacao = 'DIVERGENTE' WHERE tipo_origem = 'GERAL' AND status_conciliacao = 'PENDENTE'"
-        // But let's stick to JPA for now or add a custom query
     }
     
     public DashboardStats getStats(java.time.LocalDate startDate, java.time.LocalDate endDate, boolean useCreditDate) {
@@ -83,6 +90,27 @@ public class TransactionService {
         
         stats.setCountDivergencias(countDiv);
         stats.setCountConciliados(countConc);
+
+        // Financial Distribution
+        TransacaoRepository.FinancialStats fStats = useCreditDate ? 
+            repository.getFinancialStatsByCredit(startDate, endDate) :
+            repository.getFinancialStats(startDate, endDate);
+            
+        java.util.Map<String, BigDecimal> dist = new java.util.LinkedHashMap<>(); // LinkedHashMap to preserve order
+        if (fStats != null) {
+            dist.put("Abatimento", fStats.getSumAbatimento() != null ? fStats.getSumAbatimento() : BigDecimal.ZERO);
+            dist.put("Desconto", fStats.getSumDesconto() != null ? fStats.getSumDesconto() : BigDecimal.ZERO);
+            dist.put("IOF", fStats.getSumIof() != null ? fStats.getSumIof() : BigDecimal.ZERO);
+            dist.put("Juros/Multa", fStats.getSumJurosMulta() != null ? fStats.getSumJurosMulta() : BigDecimal.ZERO);
+            dist.put("Outras Despesas", fStats.getSumOutrasDespesas() != null ? fStats.getSumOutrasDespesas() : BigDecimal.ZERO);
+            dist.put("Outros Créditos", fStats.getSumOutrosCreditos() != null ? fStats.getSumOutrosCreditos() : BigDecimal.ZERO);
+            dist.put("Valor Líquido", fStats.getSumValorLiquido() != null ? fStats.getSumValorLiquido() : BigDecimal.ZERO);
+            dist.put("Valor Pago", fStats.getSumValorPago() != null ? fStats.getSumValorPago() : BigDecimal.ZERO);
+            dist.put("Valor Tarifa", fStats.getSumValorTarifa() != null ? fStats.getSumValorTarifa() : BigDecimal.ZERO);
+            dist.put("Valor Título", fStats.getSumValorTitulo() != null ? fStats.getSumValorTitulo() : BigDecimal.ZERO);
+        }
+        stats.setFinancialDistribution(dist);
+        
         return stats;
     }
     
@@ -96,7 +124,7 @@ public class TransactionService {
     
     // --- Advanced Comparison Logic ---
     
-    public List<ComparisonResult> compareTransactions(java.time.LocalDate start, java.time.LocalDate end, boolean filterByCreditDate) {
+    public List<ComparisonResult> compareTransactions(java.time.LocalDate start, java.time.LocalDate end, boolean filterByCreditDate, boolean onlyDivergences) {
         List<Transacao> allTransactions;
         
         if (filterByCreditDate) {
@@ -113,8 +141,8 @@ public class TransactionService {
         
         for (java.util.Map.Entry<String, List<Transacao>> entry : grouped.entrySet()) {
             List<Transacao> group = entry.getValue();
-            Transacao api = group.stream().filter(t -> "API".equals(t.getTipoOrigem())).findFirst().orElse(null);
-            Transacao geral = group.stream().filter(t -> "GERAL".equals(t.getTipoOrigem())).findFirst().orElse(null);
+            Transacao api = group.stream().filter(t -> TipoOrigem.API == t.getTipoOrigem()).findFirst().orElse(null);
+            Transacao geral = group.stream().filter(t -> TipoOrigem.GERAL == t.getTipoOrigem()).findFirst().orElse(null);
             
             ComparisonResult result = new ComparisonResult();
             result.setNossoNumero(entry.getKey());
@@ -122,6 +150,11 @@ public class TransactionService {
             result.setGeralTransaction(geral);
             
             analyzeDiscrepancies(result);
+            
+            if (onlyDivergences && !result.isDivergent()) {
+                continue;
+            }
+            
             results.add(result);
         }
         
@@ -182,7 +215,6 @@ public class TransactionService {
         result.setLogs(logs);
     }
     
-    @lombok.Data
     public static class ComparisonResult {
         private String nossoNumero;
         private Transacao apiTransaction;
@@ -203,14 +235,64 @@ public class TransactionService {
              if (geralTransaction != null) return geralTransaction.getDataOcorrencia();
              return null;
         }
+
+        public java.math.BigDecimal getValorPago() {
+            if (apiTransaction != null) return apiTransaction.getValorPago();
+            if (geralTransaction != null) return geralTransaction.getValorPago();
+            return java.math.BigDecimal.ZERO;
+        }
+
+        public java.time.LocalDate getDataCredito() {
+            if (apiTransaction != null) return apiTransaction.getDataCredito();
+            if (geralTransaction != null) return geralTransaction.getDataCredito();
+            return null;
+        }
+
+        // Getters and Setters
+        public String getNossoNumero() { return nossoNumero; }
+        public void setNossoNumero(String nossoNumero) { this.nossoNumero = nossoNumero; }
+
+        public Transacao getApiTransaction() { return apiTransaction; }
+        public void setApiTransaction(Transacao apiTransaction) { this.apiTransaction = apiTransaction; }
+
+        public Transacao getGeralTransaction() { return geralTransaction; }
+        public void setGeralTransaction(Transacao geralTransaction) { this.geralTransaction = geralTransaction; }
+
+        public boolean isDivergent() { return divergent; }
+        public void setDivergent(boolean divergent) { this.divergent = divergent; }
+
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+
+        public List<String> getLogs() { return logs; }
+        public void setLogs(List<String> logs) { this.logs = logs; }
     }
 
-    @lombok.Data
     public static class DashboardStats {
         private BigDecimal totalApi;
         private BigDecimal totalGeral;
         private BigDecimal difference;
         private Long countDivergencias;
         private Long countConciliados;
+        private java.util.Map<String, BigDecimal> financialDistribution;
+
+        // Getters and Setters
+        public BigDecimal getTotalApi() { return totalApi; }
+        public void setTotalApi(BigDecimal totalApi) { this.totalApi = totalApi; }
+
+        public BigDecimal getTotalGeral() { return totalGeral; }
+        public void setTotalGeral(BigDecimal totalGeral) { this.totalGeral = totalGeral; }
+
+        public BigDecimal getDifference() { return difference; }
+        public void setDifference(BigDecimal difference) { this.difference = difference; }
+
+        public Long getCountDivergencias() { return countDivergencias; }
+        public void setCountDivergencias(Long countDivergencias) { this.countDivergencias = countDivergencias; }
+
+        public Long getCountConciliados() { return countConciliados; }
+        public void setCountConciliados(Long countConciliados) { this.countConciliados = countConciliados; }
+
+        public java.util.Map<String, BigDecimal> getFinancialDistribution() { return financialDistribution; }
+        public void setFinancialDistribution(java.util.Map<String, BigDecimal> financialDistribution) { this.financialDistribution = financialDistribution; }
     }
 }

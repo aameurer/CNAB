@@ -1,6 +1,7 @@
 package com.compara.retorno.service;
 
 import com.compara.retorno.model.Transacao;
+import com.compara.retorno.model.TipoOrigem;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,7 +51,7 @@ public class CnabParserService {
                     
                     if (segmentType == 'T') {
                         currentTransaction = new Transacao();
-                        currentTransaction.setTipoOrigem(tipoOrigem);
+                        currentTransaction.setTipoOrigem(TipoOrigem.valueOf(tipoOrigem));
                         currentTransaction.setFileSource(file.getOriginalFilename());
                         currentTransaction.setStatusConciliacao("PENDENTE"); // Default
                         

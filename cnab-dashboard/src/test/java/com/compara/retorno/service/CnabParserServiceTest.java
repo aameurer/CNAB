@@ -27,7 +27,7 @@ public class CnabParserServiceTest {
         String content = lineT + "\n" + lineU;
         MockMultipartFile file = new MockMultipartFile("file", "test.ret", "text/plain", content.getBytes(StandardCharsets.UTF_8));
 
-        List<Transacao> transactions = parserService.parseFile(file, "TEST");
+        List<Transacao> transactions = parserService.parseFile(file, "API");
 
         assertEquals(1, transactions.size());
         Transacao t = transactions.get(0);
