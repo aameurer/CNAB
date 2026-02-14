@@ -235,8 +235,14 @@ public class WebController {
         try {
             byte[] content = pdfService.generateAnaliseReport(results, startDate, endDate);
             
+            String filename = "analise_api_geral_" + startDate + "_" + endDate + ".pdf";
+            
             return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=analise_api_geral_" + startDate + "_" + endDate + ".pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .header(HttpHeaders.EXPIRES, "0")
+                .contentLength(content.length)
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(content);
                 
