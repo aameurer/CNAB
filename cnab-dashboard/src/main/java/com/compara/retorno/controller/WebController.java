@@ -220,7 +220,8 @@ public class WebController {
     }
 
     @GetMapping("/analise-datas/pdf")
-    public ResponseEntity<byte[]> exportPdf(@RequestParam(required = false) java.time.LocalDate startDate,
+    public void exportPdf(jakarta.servlet.http.HttpServletResponse response,
+                          @RequestParam(required = false) java.time.LocalDate startDate,
                           @RequestParam(required = false) java.time.LocalDate endDate,
                           @RequestParam(required = false) Boolean useCreditDate,
                           @RequestParam(defaultValue = "false") boolean onlyDivergences) throws java.io.IOException {
@@ -235,16 +236,17 @@ public class WebController {
         try {
             byte[] content = pdfService.generateAnaliseReport(results, startDate, endDate);
             
-            String filename = "analise_api_geral_" + startDate + "_" + endDate + ".pdf";
+            response.setContentType("application/pdf");
+            response.setHeader("Content-Disposition", "attachment; filename=\"analise_api_geral_" + startDate + "_" + endDate + ".pdf\"");
+            response.setHeader("Content-Length", String.valueOf(content.length));
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("Expires", "0");
             
-            return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.EXPIRES, "0")
-                .contentLength(content.length)
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(content);
+            try (java.io.OutputStream os = response.getOutputStream()) {
+                os.write(content);
+                os.flush();
+            }
                 
         } catch (com.lowagie.text.DocumentException e) {
             throw new java.io.IOException("Error generating PDF", e);

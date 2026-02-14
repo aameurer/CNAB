@@ -21,7 +21,7 @@
             <!-- Filters -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form th:action="@{/analise-datas}" method="get" class="row g-3 align-items-end">
+                    <form th:action="@{/analise-datas}" method="get" class="row g-3 align-items-end" hx-boost="false">
                         <div class="col-md-2">
                             <label class="form-label">Data Início</label>
                             <input type="date" class="form-control" name="startDate" th:value="${startDate}">
@@ -48,7 +48,7 @@
                             <button type="submit" class="btn btn-primary w-100">Filtrar</button>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" th:formaction="@{/analise-datas/pdf}" formtarget="_blank" class="btn btn-danger w-100">
+                            <button type="submit" th:formaction="@{/analise-datas/pdf}" formtarget="_blank" class="btn btn-danger w-100" hx-disable>
                                 <i class="bi bi-file-pdf"></i> PDF
                             </button>
                         </div>
