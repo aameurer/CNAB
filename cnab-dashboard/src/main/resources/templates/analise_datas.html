@@ -79,7 +79,21 @@
                                         <span th:if="${r.status == 'SOMENTE_GERAL'}" class="badge bg-warning text-dark">SOMENTE GERAL</span>
                                     </td>
                                     <td th:text="${r.nossoNumero}"></td>
-                                    <td th:text="${r.nomePagador}"></td>
+                                    <td>
+                                        <a th:if="${r.geralTransaction != null}" 
+                                           th:href="@{/transacao/{id}(id=${r.geralTransaction.id})}" 
+                                           target="_blank" 
+                                           th:text="${r.nomePagador}"
+                                           style="text-decoration: none; color: inherit; font-weight: bold;">
+                                        </a>
+                                        <a th:if="${r.geralTransaction == null and r.apiTransaction != null}" 
+                                           th:href="@{/transacao/{id}(id=${r.apiTransaction.id})}" 
+                                           target="_blank" 
+                                           th:text="${r.nomePagador}"
+                                           style="text-decoration: none; color: inherit; font-weight: bold;">
+                                        </a>
+                                        <span th:if="${r.geralTransaction == null and r.apiTransaction == null}" th:text="${r.nomePagador}"></span>
+                                    </td>
                                     <td th:text="${#temporals.format(r.mainDate, 'dd/MM/yyyy')}"></td>
                                     <td th:text="${r.dataCredito != null ? #temporals.format(r.dataCredito, 'dd/MM/yyyy') : '-'}"></td>
                                     <td th:text="${'R$ ' + #numbers.formatDecimal(r.valorPago, 1, 'POINT', 2, 'COMMA')}"></td>
