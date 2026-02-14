@@ -58,9 +58,13 @@ public class WebController {
         TransactionService.DashboardStats stats = transactionService.getStats(startDate, endDate, effectiveUseCreditDate);
         model.addAttribute("stats", stats);
         
-        // Load Table Data
-        Sort sort = Sort.by(Sort.Direction.DESC, "statusConciliacao")
-                .and(Sort.by(Sort.Direction.DESC, effectiveUseCreditDate ? "dataCredito" : "dataOcorrencia"));
+        Sort sort = Sort.by(
+                Sort.Order.asc("nomePagador").ignoreCase(),
+                Sort.Order.asc("nossoNumero"),
+                Sort.Order.asc("tipoOrigem"),
+                Sort.Order.desc("statusConciliacao"),
+                Sort.Order.desc(effectiveUseCreditDate ? "dataCredito" : "dataOcorrencia")
+        );
         PageRequest pageable = PageRequest.of(page, 10, sort);
         Page<Transacao> transactions;
         

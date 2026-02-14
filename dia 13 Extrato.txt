@@ -1,0 +1,22 @@
+                         Caixa Econômica Federal					
+                              GovConta Caixa					
+                     Extrato das Contas Individuais					
+					
+Conta de Referência..: 1070/3703/000574431336-9 PM DE BRACO DO NORTE            					
+Formato Anterior..: (alterado em 15/09/2025) 1070/006/00000001-2					
+Data de Solicitação..: 14/02/2026 02:44:52 PM					
+Data de Referência...: 13/02/2026 - 13/02/2026					
+					
+Data Mov	Nr.Doc	Histórico	Valor (R$)		
+12/02/2026	-	SALDO ANTERIOR	-		
+13/02/2026	120226	COB INTERN	352,64		
+13/02/2026	120226	COB LOT DH	6.733,41		
+13/02/2026	120226	COB COMPE	22.032,70	29.118,75	
+13/02/2026	120226	COB INTERN	3,98D		
+13/02/2026	120226	COB LOTERI	23,88D		
+13/02/2026	120226	COB COMPE	73,63D		
+13/02/2026	130226	BOL PIX OB	4.849,61	4.849,61	33.968,36
+13/02/2026	130226	COB RET ON	0,08D		
+13/02/2026	130226	TR LIQ PIX	9,95D		
+13/02/2026	0	APLIC AUTOMATICA FUNDO	33.856,84D		
+13/02/2026	-	SALDO FINAL	-		

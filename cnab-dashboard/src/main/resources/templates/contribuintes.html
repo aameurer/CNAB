@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="~{layout :: layout(~{::section}, 'contribuintes')}">
+    <section>
+        <div class="container">
+            <h2 class="mb-4">Pesquisa de Contribuintes</h2>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form th:action="@{/contribuintes}" method="get" class="row g-3 align-items-end" hx-boost="false">
+                        <div class="col-md-4">
+                            <label class="form-label">CPF/CNPJ, Nome ou Inscrição Municipal</label>
+                            <input id="q" name="q" type="text" class="form-control" th:value="${q}">
+                            <div class="form-text">A máscara é aplicada automaticamente para CPF/CNPJ.</div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Bairro</label>
+                            <input name="bairro" type="text" class="form-control" th:value="${bairro}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Atividade Econômica</label>
+                            <input name="atividade" type="text" class="form-control" th:value="${atividade}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Situação</label>
+                            <select name="situacao" class="form-select">
+                                <option th:value="''" th:selected="${situacao == null || situacao == ''}">Todas</option>
+                                <option th:value="ATIVO" th:selected="${situacao == 'ATIVO'}">ATIVO</option>
+                                <option th:value="SUSPENSO" th:selected="${situacao == 'SUSPENSO'}">SUSPENSO</option>
+                                <option th:value="BAIXA" th:selected="${situacao == 'BAIXA'}">BAIXA</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Buscar</button>
+                        </div>
+                        <div class="col-md-12 d-flex gap-2 justify-content-end">
+                            <a class="btn btn-danger" th:href="@{/contribuintes/pdf(q=${q},bairro=${bairro},atividade=${atividade},situacao=${situacao})}" target="_blank">PDF</a>
+                            <a class="btn btn-success" th:href="@{/contribuintes/excel(q=${q},bairro=${bairro},atividade=${atividade},situacao=${situacao})}" target="_blank">Excel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span th:text="${'Resultados (' + results.getTotalElements() + ')'}"></span>
+                    <small th:text="${'Tempo: ' + took + ' ms'}"></small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-sm-custom">
+                            <thead>
+                                <tr>
+                                    <th>CPF/CNPJ</th>
+                                    <th>Nome</th>
+                                    <th>Inscrição</th>
+                                    <th>Endereço</th>
+                                    <th>Bairro</th>
+                                    <th>Atividade</th>
+                                    <th>Situação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="c : ${results.getContent()}">
+                                <td th:text="${''}" th:data-doc="${c.cpfCnpj}" class="cpfcnpj-cell"></td>
+                                    <td th:text="${c.nome}"></td>
+                                    <td th:text="${c.inscricaoMunicipal}"></td>
+                                    <td>
+                                    <span th:text="${c.logradouro}"></span>
+                                    <span th:if="${c.numero != null}" th:text="${', ' + c.numero}"></span>
+                                    <span th:if="${c.complemento != null}" th:text="${' ' + c.complemento}"></span>
+                                    <span th:if="${c.cidade != null}" th:text="${' - ' + c.cidade}"></span>
+                                    <span th:if="${c.estado != null}" th:text="${'/' + c.estado}"></span>
+                                    </td>
+                                    <td th:text="${c.bairro}"></td>
+                                    <td th:text="${c.atividadeEconomica}"></td>
+                                    <td>
+                                        <span th:classappend="${c.situacaoCadastral == 'ATIVO' ? 'badge bg-success' : (c.situacaoCadastral == 'BAIXA' ? 'badge bg-danger' : 'badge bg-secondary')}"
+                                              th:text="${c.situacaoCadastral}"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav th:if="${results.getTotalPages() > 1}">
+                        <ul class="pagination pagination-sm justify-content-end">
+                            <li class="page-item" th:classappend="${results.first}? 'disabled'">
+                                <a class="page-link" th:href="@{/contribuintes(q=${q},bairro=${bairro},atividade=${atividade},situacao=${situacao},page=${results.number - 1},size=${size})}">Anterior</a>
+                            </li>
+                            <li class="page-item disabled"><a class="page-link" th:text="${results.number + 1}"></a></li>
+                            <li class="page-item" th:classappend="${results.last}? 'disabled'">
+                                <a class="page-link" th:href="@{/contribuintes(q=${q},bairro=${bairro},atividade=${atividade},situacao=${situacao},page=${results.number + 1},size=${size})}">Próxima</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<script>
+// Máscara CPF/CNPJ em tempo real e render nas células
+(function(){
+    function onlyDigits(s){ return (s||'').replace(/\\D/g,''); }
+    function maskDoc(d){
+        if (!d) return '';
+        var x = onlyDigits(d);
+        if (x.length === 11){ return x.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/, '$1.$2.$3-$4'); }
+        if (x.length === 14){ return x.replace(/(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})/, '$1.$2.$3/$4-$5'); }
+        return d;
+    }
+    // Aplica na entrada
+    var q = document.getElementById('q');
+    if (q){
+        q.addEventListener('input', function(){
+            var v = onlyDigits(q.value);
+            if (v.length <= 11){
+                q.maxLength = 14; // 000.000.000-00
+            } else {
+                q.maxLength = 18; // 00.000.000/0000-00
+            }
+        });
+    }
+    // Render CPF/CNPJ nas células
+    document.querySelectorAll('.cpfcnpj-cell').forEach(function(td){
+        var d = td.getAttribute('data-doc');
+        td.innerText = maskDoc(d);
+    });
+})();
+</script>
+</body>
+</html>
