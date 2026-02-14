@@ -1,123 +1,140 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <body>
 
-<div th:replace="~{layout :: layout(~{::section}, 'analise')}">
-    <section>
-        <div class="container">
+    <div th:replace="~{layout :: layout(~{::section}, 'analise')}">
+        <section th:fragment="content">
+            <div class="container">
 
-            <!-- Alerts -->
-            <div th:if="${message}" th:class="${'alert alert-' + (messageType ?: 'success') + ' alert-dismissible fade show'}" role="alert">
-                <span th:text="${message}"></span>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                <span th:text="${error}"></span>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-
-            <h2 class="mb-4">Analise dos registros do Arquivo (API x Geral)</h2>
-
-            <!-- Filters -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form th:action="@{/analise-datas}" method="get" class="row g-3 align-items-end" hx-boost="false">
-                        <div class="col-md-2">
-                            <label class="form-label">Data Início</label>
-                            <input type="date" class="form-control" name="startDate" th:value="${startDate}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Data Fim</label>
-                            <input type="date" class="form-control" name="endDate" th:value="${endDate}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Considerar Data</label>
-                            <select class="form-select" name="useCreditDate">
-                                <option value="false" th:selected="${useCreditDate == false}">Ocorrência</option>
-                                <option value="true" th:selected="${useCreditDate == true}">Crédito</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Exibir</label>
-                            <select class="form-select" name="onlyDivergences">
-                                <option value="false" th:selected="${onlyDivergences == false}">Todos</option>
-                                <option value="true" th:selected="${onlyDivergences == true}">Divergente</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" th:formaction="@{/analise-datas/pdf}" formtarget="_blank" class="btn btn-danger w-100" hx-disable>
-                                <i class="bi bi-file-pdf"></i> PDF
-                            </button>
-                        </div>
-                    </form>
+                <!-- Alerts -->
+                <div th:if="${message}"
+                    th:class="${'alert alert-' + (messageType ?: 'success') + ' alert-dismissible fade show'}"
+                    role="alert">
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            </div>
-
-            <!-- Data Table -->
-            <div class="card">
-                <div class="card-header">
-                    Comparativo API vs GERAL
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped table-sm-custom">
-                            <thead>
-                                <tr>
-                                    <th onclick="sortTable(0)">Status</th>
-                                    <th onclick="sortTable(1)">Nosso Número</th>
-                                    <th onclick="sortTable(2)">Pagador</th>
-                                    <th onclick="sortTable(3)">Data Pagamento</th>
-                                    <th onclick="sortTable(4)">Data Crédito</th>
-                                    <th onclick="sortTable(5)">Valor Pago</th>
-                                    <th onclick="sortTable(6)">Detalhes (Divergências)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="r : ${results}">
-                                    <td>
-                                        <span th:if="${r.status == 'CONCILIADO'}" class="badge bg-success">CONCILIADO</span>
-                                        <span th:if="${r.status == 'DIVERGENTE'}" class="badge bg-danger">DIVERGENTE</span>
-                                        <span th:if="${r.status == 'SOMENTE_API'}" class="badge bg-primary">SOMENTE API</span>
-                                        <span th:if="${r.status == 'SOMENTE_GERAL'}" class="badge bg-warning text-dark">SOMENTE GERAL</span>
-                                    </td>
-                                    <td th:text="${r.nossoNumero}"></td>
-                                    <td>
-                                        <a th:if="${r.geralTransaction != null}" 
-                                           th:href="@{/transacao/{id}(id=${r.geralTransaction.id})}" 
-                                           target="_blank" 
-                                           th:text="${r.nomePagador}"
-                                           style="text-decoration: none; font-weight: bold;">
-                                        </a>
-                                        <a th:if="${r.geralTransaction == null and r.apiTransaction != null}" 
-                                           th:href="@{/transacao/{id}(id=${r.apiTransaction.id})}" 
-                                           target="_blank" 
-                                           th:text="${r.nomePagador}"
-                                           style="text-decoration: none; font-weight: bold;">
-                                        </a>
-                                        <span th:if="${r.geralTransaction == null and r.apiTransaction == null}" th:text="${r.nomePagador}"></span>
-                                    </td>
-                                    <td th:text="${#temporals.format(r.mainDate, 'dd/MM/yyyy')}"></td>
-                                    <td th:text="${r.dataCredito != null ? #temporals.format(r.dataCredito, 'dd/MM/yyyy') : '-'}"></td>
-                                    <td th:text="${'R$ ' + #numbers.formatDecimal(r.valorPago, 1, 'POINT', 2, 'COMMA')}"></td>
-                                    <td>
-                                        <ul th:if="${not #lists.isEmpty(r.logs)}" class="mb-0 ps-3">
-                                            <li th:each="log : ${r.logs}" th:text="${log}" class="text-danger" style="font-size: 0.9em;"></li>
-                                        </ul>
-                                        <span th:if="${#lists.isEmpty(r.logs)}" class="text-success">Valores conferem.</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                <h2 class="mb-4">Analise dos registros do Arquivo (API x Geral)</h2>
+
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form th:action="@{/analise-datas}" method="get" class="row g-3 align-items-end"
+                            hx-boost="false">
+                            <div class="col-md-2">
+                                <label class="form-label">Data Início</label>
+                                <input type="date" class="form-control" name="startDate" th:value="${startDate}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Data Fim</label>
+                                <input type="date" class="form-control" name="endDate" th:value="${endDate}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Considerar Data</label>
+                                <select class="form-select" name="useCreditDate">
+                                    <option value="false" th:selected="${useCreditDate == false}">Ocorrência</option>
+                                    <option value="true" th:selected="${useCreditDate == true}">Crédito</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Exibir</label>
+                                <select class="form-select" name="onlyDivergences">
+                                    <option value="false" th:selected="${onlyDivergences == false}">Todos</option>
+                                    <option value="true" th:selected="${onlyDivergences == true}">Divergente</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" th:formaction="@{/analise-datas/pdf}" formtarget="_blank"
+                                    class="btn btn-danger w-100" hx-disable>
+                                    <i class="bi bi-file-pdf"></i> PDF
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </div>
 
-        </div>
-    </section>
-</div>
+                <!-- Data Table -->
+                <div class="card">
+                    <div class="card-header">
+                        Comparativo API vs GERAL
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped table-sm-custom">
+                                <thead>
+                                    <tr>
+                                        <th onclick="sortTable(0)">Status</th>
+                                        <th onclick="sortTable(1)">Nosso Número</th>
+                                        <th onclick="sortTable(2)">Pagador</th>
+                                        <th onclick="sortTable(3)">Data Pagamento</th>
+                                        <th onclick="sortTable(4)">Data Crédito</th>
+                                        <th onclick="sortTable(5)">Valor Pago</th>
+                                        <th onclick="sortTable(6)">Detalhes (Divergências)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="r : ${results}">
+                                        <td>
+                                            <span th:if="${r.status == 'CONCILIADO'}"
+                                                class="badge bg-success">CONCILIADO</span>
+                                            <span th:if="${r.status == 'DIVERGENTE'}"
+                                                class="badge bg-danger">DIVERGENTE</span>
+                                            <span th:if="${r.status == 'SOMENTE_API'}" class="badge bg-primary">SOMENTE
+                                                API</span>
+                                            <span th:if="${r.status == 'SOMENTE_GERAL'}"
+                                                class="badge bg-warning text-dark">SOMENTE GERAL</span>
+                                        </td>
+                                        <td th:text="${r.nossoNumero}"></td>
+                                        <td>
+                                            <a th:if="${r.geralTransaction != null}" href="#"
+                                                th:attr="hx-get=@{/transacao/{id}(id=${r.geralTransaction.id})}"
+                                                hx-target="#transactionModalContent" data-bs-toggle="modal"
+                                                data-bs-target="#transactionModal" th:text="${r.nomePagador}"
+                                                style="text-decoration: none; font-weight: bold;">
+                                            </a>
+                                            <a th:if="${r.geralTransaction == null and r.apiTransaction != null}"
+                                                href="#" th:attr="hx-get=@{/transacao/{id}(id=${r.apiTransaction.id})}"
+                                                hx-target="#transactionModalContent" data-bs-toggle="modal"
+                                                data-bs-target="#transactionModal" th:text="${r.nomePagador}"
+                                                style="text-decoration: none; font-weight: bold;">
+                                            </a>
+                                            <span th:if="${r.geralTransaction == null and r.apiTransaction == null}"
+                                                th:text="${r.nomePagador}"></span>
+                                        </td>
+                                        <td th:text="${#temporals.format(r.mainDate, 'dd/MM/yyyy')}"></td>
+                                        <td
+                                            th:text="${r.dataCredito != null ? #temporals.format(r.dataCredito, 'dd/MM/yyyy') : '-'}">
+                                        </td>
+                                        <td
+                                            th:text="${'R$ ' + #numbers.formatDecimal(r.valorPago, 1, 'POINT', 2, 'COMMA')}">
+                                        </td>
+                                        <td>
+                                            <ul th:if="${not #lists.isEmpty(r.logs)}" class="mb-0 ps-3">
+                                                <li th:each="log : ${r.logs}" th:text="${log}" class="text-danger"
+                                                    style="font-size: 0.9em;"></li>
+                                            </ul>
+                                            <span th:if="${#lists.isEmpty(r.logs)}" class="text-success">Valores
+                                                conferem.</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
 
 </body>
+
 </html>

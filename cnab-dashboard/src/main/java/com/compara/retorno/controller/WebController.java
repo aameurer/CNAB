@@ -31,7 +31,7 @@ public class WebController {
 
     @Autowired
     private TransactionService transactionService;
-    
+
     @Autowired
     private TransacaoRepository repository;
 
@@ -39,13 +39,14 @@ public class WebController {
     private com.compara.retorno.service.PdfService pdfService;
 
     @GetMapping("/")
-    public String dashboard(Model model, 
-                          @RequestParam(defaultValue = "0") int page,
-                          @RequestParam(required = false) String filter,
-                          @RequestParam(required = false) java.time.LocalDate startDate,
-                          @RequestParam(required = false) java.time.LocalDate endDate,
-                          @RequestParam(required = false) Boolean useCreditDate) {
-        
+    public String dashboard(Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) java.time.LocalDate startDate,
+            @RequestParam(required = false) java.time.LocalDate endDate,
+            @RequestParam(required = false) Boolean useCreditDate,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "HX-Request", required = false) boolean hxRequest) {
+
         // Determine effective useCreditDate before standardizing dates
         boolean effectiveUseCreditDate = (useCreditDate != null) ? useCreditDate : (startDate == null);
 
@@ -53,60 +54,63 @@ public class WebController {
         java.time.LocalDate[] dates = DateUtils.validateAndFixRange(startDate, endDate);
         startDate = dates[0];
         endDate = dates[1];
-        
+
         // Load Stats
-        TransactionService.DashboardStats stats = transactionService.getStats(startDate, endDate, effectiveUseCreditDate);
+        TransactionService.DashboardStats stats = transactionService.getStats(startDate, endDate,
+                effectiveUseCreditDate);
         model.addAttribute("stats", stats);
-        
+
         Sort sort = Sort.by(
                 Sort.Order.asc("nomePagador").ignoreCase(),
                 Sort.Order.asc("nossoNumero"),
                 Sort.Order.asc("tipoOrigem"),
                 Sort.Order.desc("statusConciliacao"),
-                Sort.Order.desc(effectiveUseCreditDate ? "dataCredito" : "dataOcorrencia")
-        );
+                Sort.Order.desc(effectiveUseCreditDate ? "dataCredito" : "dataOcorrencia"));
         PageRequest pageable = PageRequest.of(page, 10, sort);
         Page<Transacao> transactions;
-        
+
         if (filter != null && !filter.isEmpty()) {
             if (filter.equals("DIVERGENTE")) {
-                transactions = effectiveUseCreditDate ? 
-                    repository.findByStatusConciliacaoAndDataCreditoBetween("DIVERGENTE", startDate, endDate, pageable) :
-                    repository.findByStatusConciliacaoAndDataOcorrenciaBetween("DIVERGENTE", startDate, endDate, pageable);
+                transactions = effectiveUseCreditDate
+                        ? repository.findByStatusConciliacaoAndDataCreditoBetween("DIVERGENTE", startDate, endDate,
+                                pageable)
+                        : repository.findByStatusConciliacaoAndDataOcorrenciaBetween("DIVERGENTE", startDate, endDate,
+                                pageable);
             } else if (filter.equals("API")) {
-                transactions = effectiveUseCreditDate ?
-                    repository.findByTipoOrigemAndDataCreditoBetween(TipoOrigem.API, startDate, endDate, pageable) :
-                    repository.findByTipoOrigemAndDataOcorrenciaBetween(TipoOrigem.API, startDate, endDate, pageable);
+                transactions = effectiveUseCreditDate
+                        ? repository.findByTipoOrigemAndDataCreditoBetween(TipoOrigem.API, startDate, endDate, pageable)
+                        : repository.findByTipoOrigemAndDataOcorrenciaBetween(TipoOrigem.API, startDate, endDate,
+                                pageable);
             } else {
-                transactions = effectiveUseCreditDate ?
-                    repository.findByDataCreditoBetween(startDate, endDate, pageable) :
-                    repository.findByDataOcorrenciaBetween(startDate, endDate, pageable);
+                transactions = effectiveUseCreditDate
+                        ? repository.findByDataCreditoBetween(startDate, endDate, pageable)
+                        : repository.findByDataOcorrenciaBetween(startDate, endDate, pageable);
             }
         } else {
-            transactions = effectiveUseCreditDate ?
-                repository.findByDataCreditoBetween(startDate, endDate, pageable) :
-                repository.findByDataOcorrenciaBetween(startDate, endDate, pageable);
+            transactions = effectiveUseCreditDate ? repository.findByDataCreditoBetween(startDate, endDate, pageable)
+                    : repository.findByDataOcorrenciaBetween(startDate, endDate, pageable);
         }
-        
+
         model.addAttribute("transactions", transactions);
         model.addAttribute("filter", filter);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("useCreditDate", effectiveUseCreditDate);
-        
-        return "dashboard";
+
+        return hxRequest ? "dashboard :: content" : "dashboard";
     }
 
     @GetMapping("/import")
-    public String importPage(Model model) {
-        return "importacao";
+    public String importPage(Model model,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "HX-Request", required = false) boolean hxRequest) {
+        return hxRequest ? "importacao :: content" : "importacao";
     }
 
     @PostMapping("/upload")
     public String uploadFiles(@RequestParam("apiFiles") MultipartFile[] apiFiles,
-                            @RequestParam("geralFiles") MultipartFile[] geralFiles,
-                            RedirectAttributes redirectAttributes) {
-        
+            @RequestParam("geralFiles") MultipartFile[] geralFiles,
+            RedirectAttributes redirectAttributes) {
+
         try {
             java.util.List<String> skippedFiles = new java.util.ArrayList<>();
             int processedCount = 0;
@@ -123,7 +127,7 @@ public class WebController {
                     processedCount++;
                 }
             }
-            
+
             // Process Geral Files
             for (MultipartFile file : geralFiles) {
                 if (!file.isEmpty()) {
@@ -136,12 +140,12 @@ public class WebController {
                     processedCount++;
                 }
             }
-            
+
             if (processedCount > 0) {
                 // Trigger Reconciliation
                 transactionService.performReconciliation();
             }
-            
+
             if (!skippedFiles.isEmpty()) {
                 String skippedMsg = "Arquivos já existentes ignorados: " + String.join(", ", skippedFiles);
                 if (processedCount > 0) {
@@ -155,27 +159,29 @@ public class WebController {
                 redirectAttributes.addFlashAttribute("message", "Arquivos processados com sucesso!");
                 redirectAttributes.addFlashAttribute("messageType", "success");
             } else {
-                 redirectAttributes.addFlashAttribute("message", "Nenhum arquivo selecionado.");
-                 redirectAttributes.addFlashAttribute("messageType", "info");
+                redirectAttributes.addFlashAttribute("message", "Nenhum arquivo selecionado.");
+                redirectAttributes.addFlashAttribute("messageType", "info");
             }
-            
+
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Erro ao processar arquivos: " + e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "danger");
         }
-        
+
         return "redirect:/import";
     }
-    
+
     @GetMapping("/files")
-    public String gerenciarArquivos(Model model) {
+    public String gerenciarArquivos(Model model,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "HX-Request", required = false) boolean hxRequest) {
         List<String> files = transactionService.getAllFileSources();
         model.addAttribute("files", files);
-        return "gerenciar_arquivos";
+        return hxRequest ? "gerenciar_arquivos :: content" : "gerenciar_arquivos";
     }
 
     @PostMapping("/files/delete")
-    public String deleteFiles(@RequestParam(required = false) List<String> selectedFiles, RedirectAttributes redirectAttributes) {
+    public String deleteFiles(@RequestParam(required = false) List<String> selectedFiles,
+            RedirectAttributes redirectAttributes) {
         if (selectedFiles != null && !selectedFiles.isEmpty()) {
             try {
                 transactionService.deleteByFileSources(selectedFiles);
@@ -201,91 +207,100 @@ public class WebController {
 
     @GetMapping("/analise-datas")
     public String analiseDatas(Model model,
-                             @RequestParam(required = false) java.time.LocalDate startDate,
-                             @RequestParam(required = false) java.time.LocalDate endDate,
-                             @RequestParam(required = false) Boolean useCreditDate,
-                             @RequestParam(defaultValue = "false") boolean onlyDivergences) {
-        
+            @RequestParam(required = false) java.time.LocalDate startDate,
+            @RequestParam(required = false) java.time.LocalDate endDate,
+            @RequestParam(required = false) Boolean useCreditDate,
+            @RequestParam(defaultValue = "false") boolean onlyDivergences,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "HX-Request", required = false) boolean hxRequest) {
+
         boolean effectiveUseCreditDate = (useCreditDate != null) ? useCreditDate : (startDate == null);
-        
+
         java.time.LocalDate[] dates = DateUtils.validateAndFixRange(startDate, endDate);
         startDate = dates[0];
         endDate = dates[1];
-        
-        List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate, effectiveUseCreditDate, onlyDivergences);
-        
+
+        List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate,
+                effectiveUseCreditDate, onlyDivergences);
+
         model.addAttribute("results", results);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("useCreditDate", effectiveUseCreditDate);
         model.addAttribute("onlyDivergences", onlyDivergences);
-        
-        return "analise_datas";
+
+        return hxRequest ? "analise_datas :: content" : "analise_datas";
     }
 
     @GetMapping("/analise-datas/pdf")
     public void exportPdf(jakarta.servlet.http.HttpServletResponse response,
-                          @RequestParam(required = false) java.time.LocalDate startDate,
-                          @RequestParam(required = false) java.time.LocalDate endDate,
-                          @RequestParam(required = false) Boolean useCreditDate,
-                          @RequestParam(defaultValue = "false") boolean onlyDivergences) throws java.io.IOException {
-        
+            @RequestParam(required = false) java.time.LocalDate startDate,
+            @RequestParam(required = false) java.time.LocalDate endDate,
+            @RequestParam(required = false) Boolean useCreditDate,
+            @RequestParam(defaultValue = "false") boolean onlyDivergences) throws java.io.IOException {
+
         boolean effectiveUseCreditDate = (useCreditDate != null) ? useCreditDate : (startDate == null);
         java.time.LocalDate[] dates = DateUtils.validateAndFixRange(startDate, endDate);
         startDate = dates[0];
         endDate = dates[1];
-        
-        List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate, effectiveUseCreditDate, onlyDivergences);
-        
+
+        List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate,
+                effectiveUseCreditDate, onlyDivergences);
+
         try {
             byte[] content = pdfService.generateAnaliseReport(results, startDate, endDate);
-            
+
             response.setContentType("application/pdf");
-            response.setHeader("Content-Disposition", "attachment; filename=\"analise_api_geral_" + startDate + "_" + endDate + ".pdf\"");
+            response.setHeader("Content-Disposition",
+                    "attachment; filename=\"analise_api_geral_" + startDate + "_" + endDate + ".pdf\"");
             response.setHeader("Content-Length", String.valueOf(content.length));
             response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             response.setHeader("Pragma", "no-cache");
             response.setHeader("Expires", "0");
-            
+
             try (java.io.OutputStream os = response.getOutputStream()) {
                 os.write(content);
                 os.flush();
             }
-                
+
         } catch (com.lowagie.text.DocumentException e) {
             throw new java.io.IOException("Error generating PDF", e);
         }
     }
 
     @GetMapping("/transacao/{id}")
-    public String detalhesTransacao(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
-        Transacao transacao = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Transação inválida Id: " + id));
+    public String detalhesTransacao(@org.springframework.web.bind.annotation.PathVariable Long id,
+            Model model,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "HX-Request", required = false) boolean hxRequest) {
+        Transacao transacao = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Transação inválida Id: " + id));
         model.addAttribute("transacao", transacao);
-        return "detalhes_transacao";
+        return hxRequest ? "detalhes_transacao :: modalContent" : "detalhes_transacao";
     }
 
     @GetMapping("/analise-datas/export")
     public void exportCsv(jakarta.servlet.http.HttpServletResponse response,
-                          @RequestParam(required = false) java.time.LocalDate startDate,
-                          @RequestParam(required = false) java.time.LocalDate endDate) throws java.io.IOException {
-        
-        if (startDate == null) startDate = java.time.LocalDate.now().minusDays(1);
-        if (endDate == null) endDate = java.time.LocalDate.now().minusDays(1);
+            @RequestParam(required = false) java.time.LocalDate startDate,
+            @RequestParam(required = false) java.time.LocalDate endDate) throws java.io.IOException {
+
+        if (startDate == null)
+            startDate = java.time.LocalDate.now().minusDays(1);
+        if (endDate == null)
+            endDate = java.time.LocalDate.now().minusDays(1);
 
         if (startDate.isAfter(endDate)) {
             java.time.LocalDate temp = startDate;
             startDate = endDate;
             endDate = temp;
         }
-        
+
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"analise_datas.csv\"");
-        
+
         List<Transacao> list = transactionService.findAllByPeriod(startDate, endDate);
-        
+
         java.io.PrintWriter writer = response.getWriter();
         writer.println("Origem;Nosso Numero;Pagador;Data Ocorrencia;Data Credito;Diferenca (Dias);Valor Pago");
-        
+
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         for (Transacao t : list) {
@@ -293,16 +308,15 @@ public class WebController {
             if (t.getDataOcorrencia() != null && t.getDataCredito() != null) {
                 diff = java.time.temporal.ChronoUnit.DAYS.between(t.getDataOcorrencia(), t.getDataCredito());
             }
-            
+
             writer.printf("%s;%s;%s;%s;%s;%d;%s%n",
-                t.getTipoOrigem(),
-                t.getNossoNumero(),
-                t.getNomePagador(),
-                t.getDataOcorrencia() != null ? t.getDataOcorrencia().format(formatter) : "",
-                t.getDataCredito() != null ? t.getDataCredito().format(formatter) : "",
-                diff,
-                t.getValorPago()
-            );
+                    t.getTipoOrigem(),
+                    t.getNossoNumero(),
+                    t.getNomePagador(),
+                    t.getDataOcorrencia() != null ? t.getDataOcorrencia().format(formatter) : "",
+                    t.getDataCredito() != null ? t.getDataCredito().format(formatter) : "",
+                    diff,
+                    t.getValorPago());
         }
     }
 }

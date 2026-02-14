@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(content, activePage)">
+
 <head>
     <meta charset="UTF-8">
     <title>CNAB Analytics Pro</title>
@@ -8,255 +9,267 @@
     <script src="/webjars/htmx.org/1.9.10/dist/htmx.min.js"></script>
     <script src="/webjars/chart.js/4.4.1/dist/chart.umd.js"></script>
     <style>
-        body {
-            background-color: #006400;
-            background: -webkit-linear-gradient(left, #006400, #90EE90);
-            background: -moz-linear-gradient(left, #006400, #90EE90);
-            background: -o-linear-gradient(left, #006400, #90EE90);
-            background: linear-gradient(to right, #006400, #90EE90);
-            min-height: 100vh;
-            margin: 0;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }
-        .navbar-custom {
-            background-color: #1E90FF;
-            background: -webkit-linear-gradient(left, #1E90FF, #87CEEB);
-            background: -moz-linear-gradient(left, #1E90FF, #87CEEB);
-            background: -o-linear-gradient(left, #1E90FF, #87CEEB);
-            background: linear-gradient(to right, #1E90FF, #87CEEB);
-            z-index: 1030; /* keep above content when sticky */
-        }
-        .navbar-brand {
-            color: #FFFF00 !important; /* Yellow to stand out */
-            font-weight: 800;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
-            font-size: 1.4rem;
-        }
-        .nav-link {
-            color: #FFFFFF !important;
-            font-weight: 600;
-            font-size: 1.05rem;
-            text-shadow: 0px 0px 2px rgba(0,0,0,0.3);
-        }
-        .nav-link:hover {
-            color: #f8f9fa !important;
-            text-shadow: 0px 0px 5px rgba(255,255,255,0.5);
-        }
-        .nav-link.active {
-            font-weight: 800;
-            border-bottom: 2px solid white;
-        }
-        .card-stat { transition: transform 0.2s; }
-        .card-stat:hover { transform: translateY(-5px); }
-        .card-stat h5 { font-size: 0.9rem; margin-bottom: 0.2rem; }
-        .card-stat h3 { font-size: 1.2rem; font-weight: bold; }
-        .prefix-api { color: #0d6efd; font-weight: 500; }
-        .prefix-geral { color: #198754; font-weight: 500; }
-        .table-sm-custom { font-size: 10pt; }
-        .table-sm-custom td, .table-sm-custom th { padding-top: 2px; padding-bottom: 2px; }
-        .lag-warning { color: #dc3545; font-weight: bold; }
-        .lag-ok { color: #198754; }
-        th { cursor: pointer; }
-    </style>
-    <script>
-        function initAlerts() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    try {
-                        const bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
-                    } catch(e) {}
-                }, 6000);
-            });
+        :root {
+            --header-height: 70px;
+            --primary-gradient: linear-gradient(90deg, #007bff 0%, #00c6ff 100%);
+            --bg-gradient: linear-gradient(135deg, #1ca338 0%, #a4e8a4 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
         }
 
-        function sortTable(n) {
-            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-            table = document.querySelector(".table");
-            if (!table) return;
-            switching = true;
-            dir = "asc";
-            while (switching) {
-                switching = false;
-                rows = table.rows;
-                // Start from 1 to skip header
-                for (i = 1; i < (rows.length - 1); i++) {
-                    shouldSwitch = false;
-                    x = rows[i].getElementsByTagName("TD")[n];
-                    y = rows[i + 1].getElementsByTagName("TD")[n];
-                    if (!x || !y) continue;
-                    var xContent = x.innerText.toLowerCase();
-                    var yContent = y.innerText.toLowerCase();
-                    
-                    if (dir == "asc") {
-                        if (xContent > yContent) {
-                            shouldSwitch = true;
-                            break;
-                        }
-                    } else if (dir == "desc") {
-                        if (xContent < yContent) {
-                            shouldSwitch = true;
-                            break;
-                        }
-                    }
-                }
-                if (shouldSwitch) {
-                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                    switching = true;
-                    switchcount++;
-                } else {
-                    if (switchcount == 0 && dir == "asc") {
-                        dir = "desc";
-                        switching = true;
-                    }
-                }
+        /* MODERN CSS GRID LAYOUT */
+        body {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            /* Header takes content height, Main takes rest */
+            height: 100vh;
+            overflow: hidden;
+            /* No scroll on body */
+            margin: 0;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        /* 1. Header Area */
+        header {
+            grid-row: 1;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-custom {
+            background: var(--primary-gradient);
+            padding: 0.8rem 1rem;
+        }
+
+        .navbar-brand {
+            color: #FFFF00 !important;
+            font-weight: 800;
+            font-size: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            margin: 0 2px;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff !important;
+            transform: translateY(-1px);
+        }
+
+        .nav-link.active {
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 2. Main Content Area */
+        #main-scroll-container {
+            grid-row: 2;
+            overflow-y: auto;
+            /* Independent scroll */
+            overflow-x: hidden;
+            padding: 2rem;
+            scroll-behavior: smooth;
+        }
+
+        /* Card Styles */
+        .card {
+            border: none;
+            border-radius: 12px;
+            background: var(--card-bg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            /* Softer, deeper shadow */
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .card-stat {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card-stat:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Typography */
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #2c3e50;
+        }
+
+        .prefix-api {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+
+        .prefix-geral {
+            color: #198754;
+            font-weight: 600;
+        }
+
+        /* Table Styles */
+        .table-custom {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-custom th {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+    </style>
+    <script>
+        // Modern Scroll Management
+        function resetScroll() {
+            const container = document.getElementById('main-scroll-container');
+            if (container) {
+                container.scrollTop = 0;
             }
+        }
+
+        function initAlerts() {
+            document.querySelectorAll('.alert').forEach(alert => {
+                setTimeout(() => {
+                    try { new bootstrap.Alert(alert).close(); } catch (e) { }
+                }, 5000);
+            });
         }
 
         function initDateValidation() {
             const startDateInput = document.querySelector('input[name="startDate"]');
             const endDateInput = document.querySelector('input[name="endDate"]');
-            
             if (!startDateInput || !endDateInput) return;
-
             function updateMinDate() {
                 endDateInput.min = startDateInput.value;
                 if (endDateInput.value && startDateInput.value && endDateInput.value < startDateInput.value) {
                     endDateInput.value = startDateInput.value;
                 }
             }
-
             startDateInput.addEventListener('change', updateMinDate);
             updateMinDate();
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             initAlerts();
             initDateValidation();
-            // Sempre inicia no topo em carregamentos completos
-            function setActiveByPath(path){
-                var links = document.querySelectorAll('.navbar .nav-link');
-                var chosen = null;
-                links.forEach(function(a){ a.classList.remove('active'); });
-                links.forEach(function(a){
-                    try {
-                        var p = new URL(a.getAttribute('href'), window.location.origin).pathname;
-                        if (p === path) { chosen = a; }
-                    } catch(e){}
-                });
-                if (!chosen) {
-                    links.forEach(function(a){
-                        try {
-                            var p = new URL(a.getAttribute('href'), window.location.origin).pathname;
-                            if (p !== '/' && path.startsWith(p)) { chosen = a; }
-                        } catch(e){}
-                    });
-                }
-                if (chosen) { chosen.classList.add('active'); }
-            }
-            setActiveByPath(window.location.pathname);
-            var navbar = document.querySelector('.navbar');
-            if (navbar) {
-                navbar.addEventListener('click', function(ev){
-                    var link = ev.target && ev.target.closest('.nav-link');
-                    if (link && link.getAttribute('href')) {
-                        try {
-                            var p = new URL(link.getAttribute('href'), window.location.origin).pathname;
-                            setActiveByPath(p);
-                        } catch(e){}
+
+            // Active path logic
+            const setActive = (path) => {
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                    const linkPath = new URL(link.href).pathname;
+                    if (linkPath === path || (linkPath !== '/' && path.startsWith(linkPath))) {
+                        link.classList.add('active');
                     }
                 });
-            }
-            window.__setActiveByPath = setActiveByPath;
-            try { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch(e) {}
-        });
-        document.addEventListener('htmx:load', function() {
-            initAlerts();
-            initDateValidation();
-        });
-        document.addEventListener('htmx:afterSwap', function(e){
-            var t = e.detail && e.detail.target;
-            if (t && t.id === 'main-content') {
-                try { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch(e) {}
-            }
-        });
-        document.addEventListener('htmx:afterSettle', function(e){
-            var t = e.detail && e.detail.target;
-            if (t && t.id === 'main-content') {
-                try {
-                    var src = e.detail && e.detail.elt;
-                    var link = src && src.closest && src.closest('.nav-link');
-                    if (link && window.__setActiveByPath) {
-                        var p = new URL(link.getAttribute('href'), window.location.origin).pathname;
-                        window.__setActiveByPath(p);
-                    }
-                } catch(e){}
-                try { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch(e) {}
-            }
-        });
-        // Fallback: se ocorrer erro na navegação parcial, fazer navegação completa
-        document.addEventListener('htmx:responseError', function(e){
-            var src = e.detail && e.detail.elt;
-            var link = src && src.closest && src.closest('.nav-link');
-            if (link && link.getAttribute('href')) {
-                try { window.location.href = link.getAttribute('href'); } catch(_) {}
-            }
-        });
-        document.addEventListener('htmx:beforeSwap', function(e){
-            if (e.detail && e.detail.isError) {
-                var src = e.detail && e.detail.elt;
-                var link = src && src.closest && src.closest('.nav-link');
-                if (link && link.getAttribute('href')) {
-                    try { window.location.href = link.getAttribute('href'); } catch(_) {}
+            };
+            setActive(window.location.pathname);
+            window.addEventListener('popstate', () => setActive(window.location.pathname));
+
+            // HTMX Hooks
+            document.addEventListener('htmx:afterSwap', (e) => {
+                // Ensure we scroll to top on content swap
+                if (e.detail.target.id === "content" || e.detail.target.closest("#content")) {
+                    resetScroll();
+                    setActive(window.location.pathname);
                 }
-            }
+            });
+
+            document.addEventListener('htmx:load', function () {
+                initAlerts();
+                initDateValidation();
+            });
+
+            // Initial scroll reset
+            resetScroll();
         });
     </script>
 </head>
-<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="/">CNAB Analytics Pro</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0"
-                hx-boost="true"
-                hx-target="#main-content"
-                hx-select="section"
-                hx-swap="innerHTML">
-                <li class="nav-item">
-                    <a class="nav-link" th:classappend="${activePage == 'dashboard'} ? 'active'" href="/">Dashboard</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:classappend="${activePage == 'analise'} ? 'active'" href="/analise-datas">Analise API x Geral</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:classappend="${activePage == 'import'} ? 'active'" href="/import">Importação</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:classappend="${activePage == 'contribuintes'} ? 'active'" href="/contribuintes">Contribuintes</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:classappend="${activePage == 'files'} ? 'active'" href="/files">Gerenciar Arquivos</a>
-                </li>
-                <li class="nav-item" th:if="${activePage == 'registro'}">
-                    <a class="nav-link active" href="#">Registro</a>
-                </li>
-            </ul>
+<body>
+    <!-- Grid Row 1: Header -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-bar-chart-fill me-2"></i>CNAB Analytics Pro
+                </a>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <!-- HTMX Enabled Navigation -->
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0" hx-boost="true" hx-target="#content" hx-select="section"
+                        hx-swap="innerHTML show:top">
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/analise-datas"><i class="bi bi-activity me-1"></i> Análise API x
+                                Geral</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/import"><i class="bi bi-cloud-upload me-1"></i> Importação</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/contribuintes"><i class="bi bi-people me-1"></i>
+                                Contribuintes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/files"><i class="bi bi-folder2-open me-1"></i> Arquivos</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Grid Row 2: Main Content Scroll Container -->
+    <div id="main-scroll-container">
+        <main id="content" class="container-fluid px-4 pb-5">
+            <!-- Dynamic Content Injected Here -->
+            <div th:replace="${content}"></div>
+        </main>
+    </div>
+
+    <!-- Global Transaction Details Modal -->
+    <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-transparent border-0" id="transactionModalContent">
+                <!-- Content will be loaded here via HTMX -->
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</nav>
 
-<main id="main-content">
-    <div th:replace="${content}"></div>
-    <!-- Somente o conteúdo dentro de <section> será substituído dinamicamente -->
-</main>
-
-<script src="/webjars/bootstrap/5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/webjars/bootstrap/5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

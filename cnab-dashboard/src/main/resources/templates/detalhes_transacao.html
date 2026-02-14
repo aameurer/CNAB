@@ -1,126 +1,162 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <body>
-<div th:replace="~{layout :: layout(~{::section}, 'registro')}">
-    <section>
-        <div class="container">
-            <div class="card shadow">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Detalhes da Transação</span>
-                    <button onclick="window.close()" class="btn btn-sm btn-outline-light">Fechar</button>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">ID</label>
-                            <div class="detail-value" th:text="${transacao.id}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Origem</label>
-                            <div class="detail-value">
-                                <span th:if="${transacao.tipoOrigem.name() == 'API'}" class="badge bg-primary">API</span>
-                                <span th:if="${transacao.tipoOrigem.name() == 'GERAL'}" class="badge bg-success">GERAL</span>
+    <div th:replace="~{layout :: layout(~{::section}, 'registro')}">
+        <section>
+            <div class="container">
+                <div class="card shadow" th:fragment="modalContent">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Detalhes da Transação</span>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"
+                            onclick="if(!document.querySelector('.modal.show')) window.close()"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">ID</label>
+                                <div class="detail-value" th:text="${transacao.id}"></div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Status Conciliação</label>
-                            <div class="detail-value">
-                                <span th:if="${transacao.statusConciliacao == 'CONCILIADO'}" class="badge bg-success">CONCILIADO</span>
-                                <span th:if="${transacao.statusConciliacao == 'DIVERGENTE'}" class="badge bg-danger">DIVERGENTE</span>
-                                <span th:if="${transacao.statusConciliacao == 'PENDENTE'}" class="badge bg-warning text-dark">PENDENTE</span>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Origem</label>
+                                <div class="detail-value">
+                                    <span th:if="${transacao.tipoOrigem.name() == 'API'}"
+                                        class="badge bg-primary">API</span>
+                                    <span th:if="${transacao.tipoOrigem.name() == 'GERAL'}"
+                                        class="badge bg-success">GERAL</span>
+                                </div>
                             </div>
-                        </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Status Conciliação</label>
+                                <div class="detail-value">
+                                    <span th:if="${transacao.statusConciliacao == 'CONCILIADO'}"
+                                        class="badge bg-success">CONCILIADO</span>
+                                    <span th:if="${transacao.statusConciliacao == 'DIVERGENTE'}"
+                                        class="badge bg-danger">DIVERGENTE</span>
+                                    <span th:if="${transacao.statusConciliacao == 'PENDENTE'}"
+                                        class="badge bg-warning text-dark">PENDENTE</span>
+                                </div>
+                            </div>
 
-                        <div class="col-12"><hr></div>
+                            <div class="col-12">
+                                <hr>
+                            </div>
 
-                        <div class="col-md-6">
-                            <label class="detail-label fw-bold">Nosso Número (38 a 57)</label>
-                            <div class="detail-value" th:text="${transacao.nossoNumero}"></div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="detail-label fw-bold">Nome Pagador (149 a 188)</label>
-                            <div class="detail-value" th:text="${transacao.nomePagador}"></div>
-                        </div>
+                            <div class="col-md-6">
+                                <label class="detail-label fw-bold">Nosso Número (38 a 57)</label>
+                                <div class="detail-value" th:text="${transacao.nossoNumero}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="detail-label fw-bold">Nome Pagador (149 a 188)</label>
+                                <div class="detail-value" th:text="${transacao.nomePagador}"></div>
+                            </div>
 
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Data Ocorrência (138 a 145)</label>
-                            <div class="detail-value" th:text="${#temporals.format(transacao.dataOcorrencia, 'dd/MM/yyyy')}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Data Crédito (146 a 153)</label>
-                            <div class="detail-value" th:text="${transacao.dataCredito != null ? #temporals.format(transacao.dataCredito, 'dd/MM/yyyy') : '-'}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Vencimento (74 a 81)</label>
-                            <div class="detail-value" th:text="${transacao.vencimento != null ? #temporals.format(transacao.vencimento, 'dd/MM/yyyy') : '-'}"></div>
-                        </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Data Ocorrência (138 a 145)</label>
+                                <div class="detail-value"
+                                    th:text="${#temporals.format(transacao.dataOcorrencia, 'dd/MM/yyyy')}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Data Crédito (146 a 153)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.dataCredito != null ? #temporals.format(transacao.dataCredito, 'dd/MM/yyyy') : '-'}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Vencimento (74 a 81)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.vencimento != null ? #temporals.format(transacao.vencimento, 'dd/MM/yyyy') : '-'}">
+                                </div>
+                            </div>
 
-                        <div class="col-12"><hr></div>
+                            <div class="col-12">
+                                <hr>
+                            </div>
 
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Valor Pago (78 a 92)</label>
-                            <div class="detail-value fw-bold text-success" th:text="${#numbers.formatCurrency(transacao.valorPago)}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Valor Título (82 a 96)</label>
-                            <div class="detail-value" th:text="${transacao.valorTitulo != null ? #numbers.formatCurrency(transacao.valorTitulo) : '-'}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Valor Líquido (93 a 107)</label>
-                            <div class="detail-value" th:text="${transacao.valorLiquido != null ? #numbers.formatCurrency(transacao.valorLiquido) : '-'}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Valor Tarifa (199 a 213)</label>
-                            <div class="detail-value" th:text="${transacao.valorTarifa != null ? #numbers.formatCurrency(transacao.valorTarifa) : '-'}"></div>
-                        </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Valor Pago (78 a 92)</label>
+                                <div class="detail-value fw-bold text-success"
+                                    th:text="${#numbers.formatCurrency(transacao.valorPago)}"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Valor Título (82 a 96)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.valorTitulo != null ? #numbers.formatCurrency(transacao.valorTitulo) : '-'}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Valor Líquido (93 a 107)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.valorLiquido != null ? #numbers.formatCurrency(transacao.valorLiquido) : '-'}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Valor Tarifa (199 a 213)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.valorTarifa != null ? #numbers.formatCurrency(transacao.valorTarifa) : '-'}">
+                                </div>
+                            </div>
 
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Desconto (33 a 47)</label>
-                            <div class="detail-value" th:text="${transacao.desconto != null ? #numbers.formatCurrency(transacao.desconto) : '-'}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Abatimento (48 a 62)</label>
-                            <div class="detail-value" th:text="${transacao.abatimento != null ? #numbers.formatCurrency(transacao.abatimento) : '-'}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">Juros/Multa (18 a 32)</label>
-                            <div class="detail-value" th:text="${transacao.jurosMulta != null ? #numbers.formatCurrency(transacao.jurosMulta) : '-'}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="detail-label fw-bold">IOF (63 a 77)</label>
-                            <div class="detail-value" th:text="${transacao.iof != null ? #numbers.formatCurrency(transacao.iof) : '-'}"></div>
-                        </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Desconto (33 a 47)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.desconto != null ? #numbers.formatCurrency(transacao.desconto) : '-'}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Abatimento (48 a 62)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.abatimento != null ? #numbers.formatCurrency(transacao.abatimento) : '-'}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">Juros/Multa (18 a 32)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.jurosMulta != null ? #numbers.formatCurrency(transacao.jurosMulta) : '-'}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="detail-label fw-bold">IOF (63 a 77)</label>
+                                <div class="detail-value"
+                                    th:text="${transacao.iof != null ? #numbers.formatCurrency(transacao.iof) : '-'}">
+                                </div>
+                            </div>
 
-                        <div class="col-12"><hr></div>
+                            <div class="col-12">
+                                <hr>
+                            </div>
 
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Banco (1 a 3)</label>
-                            <div class="detail-value" th:text="${transacao.banco}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Agência (18 a 22)</label>
-                            <div class="detail-value" th:text="${transacao.agencia}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Conta (24 a 35)</label>
-                            <div class="detail-value" th:text="${transacao.conta}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Carteira (58)</label>
-                            <div class="detail-value" th:text="${transacao.carteira}"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="detail-label fw-bold">Arquivo Origem</label>
-                            <div class="detail-value small text-muted" th:text="${transacao.fileSource}"></div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Banco (1 a 3)</label>
+                                <div class="detail-value" th:text="${transacao.banco}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Agência (18 a 22)</label>
+                                <div class="detail-value" th:text="${transacao.agencia}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Conta (24 a 35)</label>
+                                <div class="detail-value" th:text="${transacao.conta}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Carteira (58)</label>
+                                <div class="detail-value" th:text="${transacao.carteira}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="detail-label fw-bold">Arquivo Origem</label>
+                                <div class="detail-value small text-muted" th:text="${transacao.fileSource}"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer text-end">
-                    <button onclick="window.close()" class="btn btn-secondary">Fechar</button>
+                    <div class="card-footer text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            onclick="if(!document.querySelector('.modal.show')) window.close()">Fechar</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
-</div>
+        </section>
+    </div>
 </body>
+
 </html>
