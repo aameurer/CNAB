@@ -198,12 +198,10 @@ public class WebController {
         
         boolean effectiveUseCreditDate = (useCreditDate != null) ? useCreditDate : (startDate == null);
         
-        // Standardize dates
         java.time.LocalDate[] dates = DateUtils.validateAndFixRange(startDate, endDate);
         startDate = dates[0];
         endDate = dates[1];
         
-        // Use the new comparison logic instead of simple pagination
         List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate, effectiveUseCreditDate, onlyDivergences);
         
         model.addAttribute("results", results);
@@ -213,6 +211,13 @@ public class WebController {
         model.addAttribute("onlyDivergences", onlyDivergences);
         
         return "analise_datas";
+    }
+
+    @GetMapping("/transacao/{id}")
+    public String detalhesTransacao(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
+        Transacao transacao = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Transação inválida Id: " + id));
+        model.addAttribute("transacao", transacao);
+        return "detalhes_transacao";
     }
 
     @GetMapping("/analise-datas/export")

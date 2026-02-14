@@ -154,7 +154,9 @@
                                     <td th:text="${#numbers.formatCurrency(t.valorPago)}"></td>
                                     <td th:text="${#temporals.format(t.dataOcorrencia, 'dd/MM/yyyy')}"></td>
                                     <td th:text="${t.dataCredito != null ? #temporals.format(t.dataCredito, 'dd/MM/yyyy') : '-'}"></td>
-                                    <td th:text="${t.nomePagador}"></td>
+                                    <td>
+                                        <a th:href="@{/transacao/{id}(id=${t.id})}" target="_blank" th:text="${t.nomePagador}" style="text-decoration: none; font-weight: bold;"></a>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
