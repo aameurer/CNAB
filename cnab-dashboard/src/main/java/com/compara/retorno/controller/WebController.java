@@ -6,6 +6,9 @@ import com.compara.retorno.repository.TransacaoRepository;
 import com.compara.retorno.service.CnabParserService;
 import com.compara.retorno.service.TransactionService;
 import com.compara.retorno.util.DateUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -217,8 +220,7 @@ public class WebController {
     }
 
     @GetMapping("/analise-datas/pdf")
-    public void exportPdf(jakarta.servlet.http.HttpServletResponse response,
-                          @RequestParam(required = false) java.time.LocalDate startDate,
+    public ResponseEntity<byte[]> exportPdf(@RequestParam(required = false) java.time.LocalDate startDate,
                           @RequestParam(required = false) java.time.LocalDate endDate,
                           @RequestParam(required = false) Boolean useCreditDate,
                           @RequestParam(defaultValue = "false") boolean onlyDivergences) throws java.io.IOException {
@@ -230,13 +232,14 @@ public class WebController {
         
         List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate, effectiveUseCreditDate, onlyDivergences);
         
-        response.setContentType("application/pdf");
-        String headerKey = "Content-Disposition";
-        String headerValue = "attachment; filename=analise_api_geral_" + startDate + "_" + endDate + ".pdf";
-        response.setHeader(headerKey, headerValue);
-        
         try {
-            pdfService.generateAnaliseReport(results, startDate, endDate, response.getOutputStream());
+            byte[] content = pdfService.generateAnaliseReport(results, startDate, endDate);
+            
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=analise_api_geral_" + startDate + "_" + endDate + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(content);
+                
         } catch (com.lowagie.text.DocumentException e) {
             throw new java.io.IOException("Error generating PDF", e);
         }

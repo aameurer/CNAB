@@ -22,11 +22,11 @@ public class PdfService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final NumberFormat CURRENCY_FORMATTER = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    public void generateAnaliseReport(List<TransactionService.ComparisonResult> results, 
+    public byte[] generateAnaliseReport(List<TransactionService.ComparisonResult> results, 
                                       LocalDate startDate, 
-                                      LocalDate endDate, 
-                                      OutputStream outputStream) throws DocumentException, IOException {
+                                      LocalDate endDate) throws DocumentException {
         
+        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
         Document document = new Document(PageSize.A4.rotate());
         PdfWriter.getInstance(document, outputStream);
         
@@ -96,6 +96,8 @@ public class PdfService {
         document.add(summary);
         
         document.close();
+        
+        return outputStream.toByteArray();
     }
     
     private void addTableHeader(PdfPTable table, String headerTitle) {
