@@ -30,14 +30,14 @@
                             <label class="form-label">Data Fim</label>
                             <input type="date" class="form-control" name="endDate" th:value="${endDate}">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Considerar Data</label>
                             <select class="form-select" name="useCreditDate">
                                 <option value="false" th:selected="${useCreditDate == false}">Ocorrência</option>
                                 <option value="true" th:selected="${useCreditDate == true}">Crédito</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Exibir</label>
                             <select class="form-select" name="onlyDivergences">
                                 <option value="false" th:selected="${onlyDivergences == false}">Todos</option>
@@ -46,6 +46,11 @@
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" th:formaction="@{/analise-datas/pdf}" formtarget="_blank" class="btn btn-danger w-100">
+                                <i class="bi bi-file-pdf"></i> PDF
+                            </button>
                         </div>
                     </form>
                 </div>

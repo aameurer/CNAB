@@ -32,6 +32,9 @@ public class WebController {
     @Autowired
     private TransacaoRepository repository;
 
+    @Autowired
+    private com.compara.retorno.service.PdfService pdfService;
+
     @GetMapping("/")
     public String dashboard(Model model, 
                           @RequestParam(defaultValue = "0") int page,
@@ -211,6 +214,32 @@ public class WebController {
         model.addAttribute("onlyDivergences", onlyDivergences);
         
         return "analise_datas";
+    }
+
+    @GetMapping("/analise-datas/pdf")
+    public void exportPdf(jakarta.servlet.http.HttpServletResponse response,
+                          @RequestParam(required = false) java.time.LocalDate startDate,
+                          @RequestParam(required = false) java.time.LocalDate endDate,
+                          @RequestParam(required = false) Boolean useCreditDate,
+                          @RequestParam(defaultValue = "false") boolean onlyDivergences) throws java.io.IOException {
+        
+        boolean effectiveUseCreditDate = (useCreditDate != null) ? useCreditDate : (startDate == null);
+        java.time.LocalDate[] dates = DateUtils.validateAndFixRange(startDate, endDate);
+        startDate = dates[0];
+        endDate = dates[1];
+        
+        List<TransactionService.ComparisonResult> results = transactionService.compareTransactions(startDate, endDate, effectiveUseCreditDate, onlyDivergences);
+        
+        response.setContentType("application/pdf");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=analise_api_geral_" + startDate + "_" + endDate + ".pdf";
+        response.setHeader(headerKey, headerValue);
+        
+        try {
+            pdfService.generateAnaliseReport(results, startDate, endDate, response.getOutputStream());
+        } catch (com.lowagie.text.DocumentException e) {
+            throw new java.io.IOException("Error generating PDF", e);
+        }
     }
 
     @GetMapping("/transacao/{id}")
