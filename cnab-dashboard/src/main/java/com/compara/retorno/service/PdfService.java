@@ -28,6 +28,7 @@ public class PdfService {
         
         java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
         Document document = new Document(PageSize.A4.rotate());
+        document.setMargins(10, 10, 10, 10);
         PdfWriter.getInstance(document, outputStream);
         
         document.open();
@@ -49,9 +50,9 @@ public class PdfService {
         document.add(period);
         
         // Table
-        PdfPTable table = new PdfPTable(6); // Columns: Status, Nosso Numero, Pagador, Data Pag., Data Cred., Valor
+        PdfPTable table = new PdfPTable(8); // Columns: Status, Nosso Numero, Pagador, Data Pag., Data Cred., Valor API, Valor Geral, Diferença
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{2f, 2f, 4f, 2f, 2f, 2f});
+        table.setWidths(new float[]{2f, 2f, 4f, 2f, 2f, 2f, 2f, 2f});
         
         // Header
         addTableHeader(table, "Status");
@@ -59,10 +60,16 @@ public class PdfService {
         addTableHeader(table, "Pagador");
         addTableHeader(table, "Data Pag.");
         addTableHeader(table, "Data Créd.");
-        addTableHeader(table, "Valor Pago");
+        addTableHeader(table, "Valor API");
+        addTableHeader(table, "Valor Geral");
+        addTableHeader(table, "Diferença");
         
         // Data
-        Font cellFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+        Font cellFont = FontFactory.getFont(FontFactory.HELVETICA, 9); // Reduced font size to fit
+        
+        BigDecimal totalApi = BigDecimal.ZERO;
+        BigDecimal totalGeral = BigDecimal.ZERO;
+        BigDecimal totalDiff = BigDecimal.ZERO;
         
         for (TransactionService.ComparisonResult result : results) {
             // Status
@@ -84,10 +91,64 @@ public class PdfService {
             LocalDate creditDate = result.getDataCredito();
             table.addCell(new Phrase(creditDate != null ? creditDate.format(DATE_FORMATTER) : "-", cellFont));
             
-            BigDecimal valor = result.getValorPago();
-            table.addCell(new Phrase(valor != null ? CURRENCY_FORMATTER.format(valor) : "-", cellFont));
+            // Values logic
+            BigDecimal valApi = BigDecimal.ZERO;
+            if (result.getApiTransaction() != null && result.getApiTransaction().getValorPago() != null) {
+                valApi = result.getApiTransaction().getValorPago();
+            }
+            
+            BigDecimal valGeral = BigDecimal.ZERO;
+            if (result.getGeralTransaction() != null && result.getGeralTransaction().getValorPago() != null) {
+                valGeral = result.getGeralTransaction().getValorPago();
+            }
+            
+            BigDecimal diff = valApi.subtract(valGeral);
+            if (!result.isDivergent()) {
+                 // If not divergent, technically difference is zero, but let's calculate to be sure
+                 // Usually for reconciled, it should be exact match
+            }
+            
+            // Accumulate totals
+            // Note: Only accumulate if the transaction exists in that context?
+            // Yes, if API exists, add to API total. If Geral exists, add to Geral total.
+            // If it's "SOMENTE API", Geral is 0. If "SOMENTE GERAL", API is 0.
+            
+            totalApi = totalApi.add(valApi);
+            totalGeral = totalGeral.add(valGeral);
+            totalDiff = totalDiff.add(diff);
+
+            // Add cells
+            table.addCell(new Phrase(result.getApiTransaction() != null ? CURRENCY_FORMATTER.format(valApi) : "-", cellFont));
+            table.addCell(new Phrase(result.getGeralTransaction() != null ? CURRENCY_FORMATTER.format(valGeral) : "-", cellFont));
+            
+            PdfPCell diffCell = new PdfPCell(new Phrase(CURRENCY_FORMATTER.format(diff), cellFont));
+            if (diff.compareTo(BigDecimal.ZERO) != 0) {
+                 diffCell.setBackgroundColor(new Color(255, 255, 200)); // Light Yellow for difference
+            }
+            table.addCell(diffCell);
         }
         
+        // Totals Row
+        Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9);
+        
+        PdfPCell totalLabel = new PdfPCell(new Phrase("TOTAIS", boldFont));
+        totalLabel.setColspan(5); // Status + Nosso + Pagador + Data Pag + Data Cred
+        totalLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        totalLabel.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(totalLabel);
+        
+        PdfPCell totalApiCell = new PdfPCell(new Phrase(CURRENCY_FORMATTER.format(totalApi), boldFont));
+        totalApiCell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(totalApiCell);
+        
+        PdfPCell totalGeralCell = new PdfPCell(new Phrase(CURRENCY_FORMATTER.format(totalGeral), boldFont));
+        totalGeralCell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(totalGeralCell);
+        
+        PdfPCell totalDiffCell = new PdfPCell(new Phrase(CURRENCY_FORMATTER.format(totalDiff), boldFont));
+        totalDiffCell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(totalDiffCell);
+
         document.add(table);
         
         // Summary
